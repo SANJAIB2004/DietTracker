@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar -->
+    <nav class="bg-blue-600 p-4 shadow-md">
+        <div class="container mx-auto text-white text-lg font-bold">Calorie Tracker</div>
+    </nav>
+
+    <div class="container mx-auto mt-8 p-4">
+        
+        <!-- Calorie Goal Progress -->
+        <h4 class="text-xl font-semibold mb-4">Calorie Goal</h4>
+        <div class="w-full bg-gray-300 rounded-lg overflow-hidden">
+            <div class="h-6 bg-green-500 progress-bar transition-all duration-500" style="width: 0%;"></div>
+        </div>
+
+        <!-- Food Selection -->
+        <div class="mt-8 bg-white shadow-md p-6 rounded-lg">
+            <h4 class="text-lg font-bold mb-4">Select Food To Add</h4>
+            <form method="POST" class="flex space-x-4">
+                {% csrf_token %}
+                <select class="border p-2 rounded-lg w-full" name="food_consumed" id="food_consumed">
+                    {% for food in foods %}
+                        <option value="{{food.name}}">{{food.name}}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Add</button>
+            </form>
+        </div>
+
+        <!-- Food Table & Chart -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+
+            <!-- Food Consumption Table -->
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <h4 class="text-lg font-bold mb-4">Today's Consumption</h4>
+                <table class="w-full border-collapse border border-gray-300">
+                    <thead class="bg-blue-500 text-white">
+                        <tr>
+                            <th class="p-2">Food item</th>
+                            <th class="p-2">Carbs(gm)</th>
+                            <th class="p-2">Protein(gm)</th>
+                            <th class="p-2">Fats(gm)</th>
+                            <th class="p-2">Calories(Kcal)</th>
+                            <th class="p-2">Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in consumed_food %}
+                        <tr class="border border-gray-300">
+                            <td class="p-2">{{ c.food_consumed.name }}</td>
+                            <td class="p-2">{{ c.food_consumed.carbs }}</td>
+                            <td class="p-2">{{ c.food_consumed.protein }}</td>
+                            <td class="p-2">{{ c.food_consumed.fats }}</td>
+                            <td class="p-2">{{ c.food_consumed.calories }}</td>
+                            <td class="p-2">
+                                <a href="{% url 'delete' c.id %}" class="text-red-500 hover:text-red-700">X</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="font-bold bg-gray-100">
+                            <td class="p-2">Total</td>
+                            <td class="p-2" id="totalCarbs"></td>
+                            <td class="p-2" id="totalProtein"></td>
+                            <td class="p-2" id="totalFats"></td>
+                            <td class="p-2" id="totalCalories"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Macronutrient Breakdown -->
+            <div class="bg-white shadow-md p-6 rounded-lg">
+                <h4 class="text-lg font-bold mb-4">Macronutrients Breakdown</h4>
+                <canvas id="myChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        var table = document.getElementsByTagName("table")[0];
+        var carbs = 0, protein = 0, fats = 0, calories = 0;
+
+        for (var i = 1; i < table.rows.length - 1; i++) {
+            carbs += parseFloat(table.rows[i].cells[1].innerHTML) || 0;
+            protein += parseFloat(table.rows[i].cells[2].innerHTML) || 0;
+            fats += parseFloat(table.rows[i].cells[3].innerHTML) || 0;
+            calories += parseFloat(table.rows[i].cells[4].innerHTML) || 0;
+        }
+
+        document.getElementById("totalCarbs").innerText = carbs + "g";
+        document.getElementById("totalProtein").innerText = protein + "g";
+        document.getElementById("totalFats").innerText = fats + "g";
+        document.getElementById("totalCalories").innerText = calories + "Kcal";
+
+        var calPer = (calories / 2000) * 100;
+        document.querySelector(".progress-bar").style.width = calPer + "%";
+
+        var total = carbs + protein + fats;
+        var carbsP = Math.round((carbs / total) * 100);
+        var proteinP = Math.round((protein / total) * 100);
+        var fatsP = Math.round((fats / total) * 100);
+
+        var ctx = document.getElementById("myChart").getContext("2d");
+        new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Carbs " + carbsP + "%", "Protein " + proteinP + "%", "Fats " + fatsP + "%"],
+                datasets: [{
+                    data: [carbsP, proteinP, fatsP],
+                    backgroundColor: ["#ff6384", "#36a2eb", "#ffce56"],
+                }]
+            }
+        });
+    </script>
+
+</body>
+</html>
